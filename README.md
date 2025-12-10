@@ -7,9 +7,6 @@
 
 **Gift Genius** adalah aplikasi web pintar yang ditenagai oleh **Google Gemini AI**. Aplikasi ini mengubah deskripsi singkat tentang seseorang (contoh: *"Ayah saya yang suka berkebun tapi sering sakit pinggang"*) menjadi rekomendasi kado yang sangat spesifik dan penuh empati.
 
-![Tampilan Aplikasi](./public/screenshot.png)
-*(Catatan: Ganti gambar ini dengan screenshot asli aplikasi Anda agar lebih menarik!)*
-
 ---
 
 ## ✨ Fitur Utama
