@@ -54,6 +54,5 @@ Jika Anda memiliki ide fitur baru atau ingin memperbaiki tampilan, silakan buat 
 ---
 
 <div align="center">
-  <p>Dibuat dengan ❤️ dan ☕ oleh [Nama Anda]</p>
   <p>Didukung oleh Google Gemini AI</p>
 </div>
