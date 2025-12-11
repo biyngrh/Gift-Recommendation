@@ -3,6 +3,20 @@ import { Language } from "../types";
 export const translations = {
   id: {
     title: "Gift Genius",
+    
+    // Landing Page
+    landingHeroSubtitle: "Sentuh satu aura untuk memulai keajaiban.",
+    tarot1Title: "Sang Bintang", // Deprecated but kept for safety if referenced elsewhere temporarily
+    tarot1Desc: "Peta rasi bintang kustom dari malam kita bertemu.",
+    tarot2Title: "Sang Alkemis",
+    tarot2Desc: "Paket DIY Gastronomi Molekuler.",
+    tarot3Title: "Sang Penjelajah",
+    tarot3Desc: "Peta dunia gores untuk petualangan berikutnya.",
+    cardOracle: "SANG ORAKEL",
+    cardReveal: "KLIK UNTUK MEMBUKA",
+    enterOracle: "Masuki Orakel",
+
+    // Main App
     heroTitle: "Buka ",
     heroTitleHighlight: "Keajaiban.",
     heroDesc: "Unggah foto untuk membaca aura, atur mantra anggaran, dan biarkan AI menemukan kado yang sempurna.",
@@ -11,7 +25,7 @@ export const translations = {
     occasionLabel: "Acara Spesial",
     budgetLabel: "Mantra Anggaran",
     readAura: "Baca Aura",
-    uploadHint: "Unggah foto (opsional)",
+    uploadHint: "Klik atau tarik foto ke sini (opsional)",
     changeImage: "Ubah",
     auraActive: "Aura Aktif",
     removeImage: "Hapus Gambar",
@@ -58,6 +72,20 @@ export const translations = {
   },
   en: {
     title: "Gift Genius",
+
+    // Landing Page
+    landingHeroSubtitle: "Tap a vibe to start the magic.",
+    tarot1Title: "The Star",
+    tarot1Desc: "A custom constellation map of the night we met.",
+    tarot2Title: "The Alchemist",
+    tarot2Desc: "A DIY Molecular Gastronomy Kit.",
+    tarot3Title: "The Traveler",
+    tarot3Desc: "Scratch-off world map for their next adventure.",
+    cardOracle: "THE ORACLE",
+    cardReveal: "CLICK TO REVEAL",
+    enterOracle: "Enter the Oracle",
+
+    // Main App
     heroTitle: "Unlock ",
     heroTitleHighlight: "Magic.",
     heroDesc: "Upload a photo to read the aura, set your budget spell, and let AI find the perfect gift.",
@@ -66,7 +94,7 @@ export const translations = {
     occasionLabel: "Special Occasion",
     budgetLabel: "Budget Spell",
     readAura: "Read Aura",
-    uploadHint: "Upload photo (optional)",
+    uploadHint: "Click or drag photo here (optional)",
     changeImage: "Change",
     auraActive: "Aura Active",
     removeImage: "Remove Image",
