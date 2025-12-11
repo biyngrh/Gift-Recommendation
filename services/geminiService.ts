@@ -14,6 +14,12 @@ interface GenerateOptions {
   music?: string;  // New Optional Field
 }
 
+interface AlchemyOptions {
+  elementA: string;
+  elementB: string;
+  language: Language;
+}
+
 export const generateGiftIdeas = async ({ 
   description, 
   imageBase64, 
@@ -160,6 +166,92 @@ export const generateGiftIdeas = async ({
 
   } catch (error) {
     console.error("Error generating gifts:", error);
+    throw error;
+  }
+};
+
+export const generateAlchemyIdeas = async ({
+  elementA,
+  elementB,
+  language
+}: AlchemyOptions): Promise<GiftRecommendation[]> => {
+  try {
+    const model = "gemini-2.5-flash";
+    const isId = language === 'id';
+
+    const promptText = isId 
+      ? `
+      Bertindaklah sebagai Alkemis Kado Kreatif.
+      User ingin menggabungkan dua konsep: "${elementA}" dan "${elementB}" menjadi satu hadiah kreatif.
+      
+      TUGAS:
+      Cari barang NYATA (bukan fiksi) yang merupakan persilangan (crossover) dari kedua hal ini.
+      Berikan 3 ide unik.
+      
+      Contoh Logika:
+      - 'Golf' + 'Star Wars' = 'Chewbacca Headcover' atau 'Lightsaber Putter'.
+      - 'Kucing' + 'Sushi' = 'Kostum Sushi Kucing' atau 'Mainan Nekomaki'.
+      - 'Kopi' + 'Fotografi' = 'Mug Lensa Kamera'.
+      
+      Output dalam Bahasa Indonesia.
+      `
+      : `
+      Act as a Creative Gift Alchemist.
+      User wants to fuse two concepts: "${elementA}" and "${elementB}" into one creative gift.
+      
+      TASK:
+      Find REAL items (not fictional) that are a crossover of these two things.
+      Provide 3 unique ideas.
+      
+      Logic Examples:
+      - 'Golf' + 'Star Wars' = 'Chewbacca Headcover' or 'Lightsaber Putter'.
+      - 'Cats' + 'Sushi' = 'Cat Sushi Costume' or 'Nekomaki Toys'.
+      - 'Coffee' + 'Photography' = 'Camera Lens Mug'.
+      
+      Output in English.
+      `;
+
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: promptText,
+      config: {
+        systemInstruction: isId 
+          ? "Kamu adalah Alkemis Kreatif. Gabungkan konsep menjadi barang nyata. Output JSON."
+          : "You are a Creative Alchemist. Fuse concepts into real items. Output JSON.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: {
+                type: Type.STRING,
+                description: "Name of the crossover product."
+              },
+              reason: {
+                type: Type.STRING,
+                description: "Explanation of how it combines both elements."
+              },
+              price_range: {
+                type: Type.STRING,
+                description: "Estimated price."
+              }
+            },
+            required: ["name", "reason", "price_range"],
+            propertyOrdering: ["name", "reason", "price_range"]
+          }
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as GiftRecommendation[];
+    } else {
+      throw new Error("No Alchemy data returned");
+    }
+
+  } catch (error) {
+    console.error("Error generating alchemy gifts:", error);
     throw error;
   }
 };

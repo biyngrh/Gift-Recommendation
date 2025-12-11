@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Gift, Sparkles, History as HistoryIcon, Loader2, RefreshCcw, Moon, Sun, Camera, X, ChevronDown, ArrowRight, Home, Music, Star } from 'lucide-react';
-import { generateGiftIdeas } from './services/geminiService';
+import { Gift, Sparkles, History as HistoryIcon, Loader2, RefreshCcw, Moon, Sun, Camera, X, ChevronDown, ArrowRight, Home, Music, Star, FlaskConical, Zap, LayoutGrid, ChevronLeft, ChevronRight, Globe, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { generateGiftIdeas, generateAlchemyIdeas } from './services/geminiService';
 import { GiftRecommendation, LoadingState, GiftHistoryItem, Language } from './types';
 import GiftCard from './components/GiftCard';
 import HistoryItem from './components/HistoryItem';
@@ -8,9 +8,22 @@ import { translations } from './utils/translations';
 
 const App: React.FC = () => {
   // --- State Management ---
+  
+  // Navigation State
+  const [activeTab, setActiveTab] = useState<'oracle' | 'alchemy'>('oracle');
+
+  // Oracle Mode States
   const [description, setDescription] = useState('');
   const [loadingState, setLoadingState] = useState<LoadingState>(LoadingState.IDLE);
   const [recommendations, setRecommendations] = useState<GiftRecommendation[]>([]);
+  
+  // Alchemy Mode States
+  const [elementA, setElementA] = useState('');
+  const [elementB, setElementB] = useState('');
+  const [alchemyResults, setAlchemyResults] = useState<GiftRecommendation[]>([]);
+  const [alchemyLoading, setAlchemyLoading] = useState<LoadingState>(LoadingState.IDLE);
+
+  // Shared States
   const [history, setHistory] = useState<GiftHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -152,6 +165,29 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAlchemyFuse = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!elementA.trim() || !elementB.trim()) return;
+
+    setAlchemyLoading(LoadingState.LOADING);
+    setErrorMsg(null);
+
+    try {
+      const results = await generateAlchemyIdeas({
+        elementA,
+        elementB,
+        language
+      });
+      setAlchemyResults(results);
+      setAlchemyLoading(LoadingState.SUCCESS);
+      // Optional: Save Alchemy to history with a special prefix
+      saveToHistory(`⚗️ ${elementA} + ${elementB}`, results);
+    } catch (error) {
+      setAlchemyLoading(LoadingState.ERROR);
+      setErrorMsg(t.errorGeneric);
+    }
+  };
+
   const processFile = (file: File) => {
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -200,21 +236,37 @@ const App: React.FC = () => {
   const handleBackToHome = () => {
     setIsExitingLanding(false);
     setShowLanding(true);
+    // Reset tabs
+    setActiveTab('oracle');
   };
 
   const handleVibeClick = (vibe: string) => {
-    // 1. Set description automatically
     const template = language === 'id' 
       ? `Mencari kado untuk seseorang yang suka suasana ${vibe}...`
       : `Looking for a gift for someone who is ${vibe}...`;
-    
     setDescription(template);
-    
-    // 2. Transition to Main App
     handleEnterApp();
   };
 
-  // --- UI Components ---
+  // --- Sub-Components ---
+
+  const NavButton = ({ id, icon: Icon, label, active, onClick }: { id?: string, icon: any, label: string, active: boolean, onClick: () => void }) => (
+    <button 
+      onClick={onClick}
+      className={`flex items-center justify-start px-4 py-3 rounded-xl w-full transition-all duration-300 group relative ${
+        active 
+          ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' 
+          : 'text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10'
+      }`}
+    >
+      <Icon size={20} className={`${active ? 'animate-pulse-slow' : 'group-hover:scale-110 transition-transform'} mr-3`} />
+      <span className="font-medium text-sm md:text-base whitespace-nowrap">
+        {label}
+      </span>
+    </button>
+  );
+
+  // --- UI Render ---
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 relative overflow-x-hidden selection:bg-purple-500/30 transition-colors duration-500 font-sans">
@@ -285,289 +337,450 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* --- MAIN APP --- */}
+      {/* --- MAIN APP LAYOUT --- */}
       {!showLanding && (
-        <div className="animate-fade-in">
-          {/* Header */}
-          <header className="sticky top-0 z-50 border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl transition-colors duration-300">
-            <div className="max-w-5xl mx-auto px-4 h-20 flex items-center justify-between">
-              <div className="flex items-center gap-3 cursor-pointer group" onClick={handleBackToHome}>
-                <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2.5 rounded-xl text-white shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow duration-300">
-                  <Gift size={22} className="group-hover:rotate-12 transition-transform duration-300" />
+        <div className="animate-fade-in flex flex-col md:flex-row min-h-screen">
+          
+          {/* DESKTOP SIDEBAR */}
+          <aside className="hidden md:flex flex-col fixed h-full w-64 z-40 bg-white/60 dark:bg-slate-950/60 backdrop-blur-2xl border-r border-slate-200 dark:border-white/5 p-6">
+             {/* Logo */}
+             <div className="flex items-center gap-2 mb-6 cursor-pointer" onClick={handleBackToHome}>
+                <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg text-white shadow-lg shadow-purple-500/20">
+                  <Gift size={24} />
                 </div>
-                <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-slate-800 via-purple-600 to-slate-800 dark:from-white dark:via-purple-100 dark:to-white/70 bg-clip-text text-transparent">
-                  {t.title}
-                </h1>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                
-                {/* Home Button */}
-                <button onClick={handleBackToHome} className="p-3 rounded-xl transition-all bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400" title="Home">
-                   <Home size={20} />
-                </button>
+                <h1 className="text-2xl font-extrabold tracking-tight">Gift Genius</h1>
+             </div>
 
-                {/* Language Toggle */}
-                <button onClick={toggleLanguage} className="p-3 rounded-xl transition-all bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-2xl leading-none" title="Switch Language">
-                  {language === 'id' ? '🇮🇩' : '🇺🇸'}
-                </button>
+             {/* Utility Buttons (Home, Language, Theme) - Moved to top */}
+             <div className="space-y-1 mb-6 pb-6 border-b border-slate-200 dark:border-white/5">
+                <NavButton 
+                  onClick={handleBackToHome} 
+                  icon={Home} 
+                  label="Home" 
+                  active={false} 
+               />
+                <NavButton 
+                  onClick={toggleLanguage} 
+                  icon={Globe} 
+                  label={language === 'id' ? 'Bahasa' : 'English'} 
+                  active={false} 
+               />
+                <NavButton 
+                  onClick={toggleTheme} 
+                  icon={theme === 'dark' ? Sun : Moon} 
+                  label={theme === 'dark' ? 'Light Mode' : 'Dark Mode'} 
+                  active={false} 
+               />
+             </div>
 
-                <button onClick={toggleTheme} className="p-3 rounded-xl transition-all bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400">
-                   {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                 </button>
+             {/* Main Navigation (Oracle & Alchemy) */}
+             <nav className="flex-1 space-y-2">
+               <NavButton 
+                  onClick={() => setActiveTab('oracle')} 
+                  icon={Sparkles} 
+                  label={t.menuOracle} 
+                  active={activeTab === 'oracle'} 
+               />
+               <NavButton 
+                  onClick={() => setActiveTab('alchemy')} 
+                  icon={FlaskConical} 
+                  label={t.menuAlchemy} 
+                  active={activeTab === 'alchemy'} 
+               />
+             </nav>
+          </aside>
 
-                <button onClick={() => setShowHistory(!showHistory)} className="p-3 rounded-xl transition-all relative border bg-white/50 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400">
-                  <div className="relative">
-                    <HistoryIcon size={20} />
-                    {history.length > 0 && (
-                      <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-red-500 text-[10px] font-bold text-white">
-                        {history.length}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              </div>
-            </div>
-          </header>
-
-          <main className="max-w-5xl mx-auto px-4 pt-12 pb-24">
+          {/* MAIN CONTENT AREA */}
+          <main className="flex-1 pb-24 md:pb-12 pt-6 px-4 md:px-12 max-w-7xl mx-auto w-full md:ml-64">
             
-            <div className={`transition-all duration-500 ${showHistory ? 'opacity-30 blur-sm pointer-events-none transform scale-95' : 'opacity-100 transform scale-100'}`}>
-              
-              {/* Hero Section */}
-              <div className="text-center mb-10 max-w-3xl mx-auto">
-                <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight leading-tight text-slate-800 dark:text-slate-100">
-                  {t.heroTitle} <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 dark:from-purple-400 dark:via-pink-400 dark:to-orange-400 bg-clip-text text-transparent">{t.heroTitleHighlight}</span>
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400 text-lg mb-8 leading-relaxed font-light">
-                  {t.heroDesc}
-                </p>
-              </div>
+            {/* Header Mobile Only */}
+            <div className="md:hidden flex items-center justify-between mb-8">
+               <div className="flex items-center gap-2" onClick={handleBackToHome}>
+                  <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg text-white">
+                    <Gift size={20} />
+                  </div>
+                  <h1 className="text-xl font-extrabold tracking-tight">Gift Genius</h1>
+               </div>
+               <div className="flex gap-2">
+                 <button onClick={toggleTheme} className="p-2 bg-white/50 dark:bg-white/5 rounded-full"><Sun size={20} /></button>
+                 <button onClick={() => setShowHistory(!showHistory)} className="p-2 bg-white/50 dark:bg-white/5 rounded-full relative">
+                    <HistoryIcon size={20} />
+                    {history.length > 0 && <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full"/>}
+                 </button>
+               </div>
+            </div>
 
-              {/* GLASS CONTROL PANEL */}
-              <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden group mb-16">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-                
-                <form onSubmit={handleGenerate} className="relative z-10 flex flex-col gap-6">
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    {/* 1. Occasion Wheel */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">{t.occasionLabel}</label>
-                      <div className="relative">
-                        <select 
-                          value={occasionKey}
-                          onChange={(e) => setOccasionKey(e.target.value)}
-                          className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-700 dark:text-slate-200 font-medium focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
-                        >
-                          {occasionKeys.map(key => (
-                            <option key={key} value={key}>{(t.occasions as any)[key]}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                      </div>
-                    </div>
+            {/* Desktop History Button (Absolute Top Right) */}
+            <button 
+              onClick={() => setShowHistory(!showHistory)} 
+              className="hidden md:flex absolute top-6 right-6 p-3 rounded-xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-white/10 transition-all z-30"
+            >
+               <HistoryIcon size={20} />
+               {history.length > 0 && (
+                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-red-500 text-[10px] font-bold text-white">
+                   {history.length}
+                 </span>
+               )}
+            </button>
 
-                    {/* 2. Budget Spell */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1 flex justify-between">
-                        <span>{t.budgetLabel}</span>
-                        <span className="text-purple-600 dark:text-purple-400">{(t.budgets as any)[budgetKeys[budgetIndex]]}</span>
-                      </label>
-                      <div className="h-[46px] flex items-center px-2">
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="3" 
-                          step="1"
-                          value={budgetIndex}
-                          onChange={(e) => setBudgetIndex(parseInt(e.target.value))}
-                          className="w-full h-2 bg-slate-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-pink-500 transition-all"
-                        />
-                      </div>
-                    </div>
+            {/* Content Switcher */}
+            {activeTab === 'oracle' ? (
+               // --- ORACLE MODE ---
+               <div className="animate-fade-in">
+                  <div className="text-center mb-10 max-w-3xl mx-auto pt-4 md:pt-12">
+                    <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight leading-tight text-slate-800 dark:text-slate-100">
+                      {t.heroTitle} <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 dark:from-purple-400 dark:via-pink-400 dark:to-orange-400 bg-clip-text text-transparent">{t.heroTitleHighlight}</span>
+                    </h2>
+                    <p className="text-slate-600 dark:text-slate-400 text-lg mb-8 leading-relaxed font-light">
+                      {t.heroDesc}
+                    </p>
                   </div>
 
-                  {/* 3. Aura Reading & Description */}
-                  <div className="flex flex-col md:flex-row gap-6">
-                    {/* Image Upload Area */}
-                    <div className="w-full md:w-1/3 shrink-0">
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleImageUpload} 
-                        accept="image/*" 
-                        className="hidden" 
-                      />
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        className={`h-full min-h-[160px] rounded-2xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center p-4 relative overflow-hidden group/image
-                          ${selectedImage 
-                            ? 'border-purple-500/50 bg-slate-900/50' 
-                            : isDragging
-                              ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-500/10 scale-[1.02]'
-                              : 'border-slate-300 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-purple-500/5'
-                          }`}
-                      >
-                        {selectedImage ? (
-                          <>
-                            <img src={selectedImage} alt="Aura" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/image:opacity-40 transition-opacity" />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity">
-                              <span className="text-white font-medium flex items-center gap-2"><RefreshCcw size={14}/> {t.changeImage}</span>
-                            </div>
-                            <div className="absolute top-2 right-2 bg-purple-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">{t.auraActive}</div>
-                          </>
-                        ) : (
-                          <>
-                            <div className={`bg-white dark:bg-white/10 p-3 rounded-full mb-3 shadow-sm transition-transform ${isDragging ? 'scale-125' : 'group-hover/image:scale-110'}`}>
-                              <Camera size={24} className="text-purple-500 dark:text-purple-300" />
-                            </div>
-                            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{t.readAura}</p>
-                            <p className="text-xs text-slate-400 text-center mt-1">{t.uploadHint}</p>
-                          </>
-                        )}
-                      </div>
-                      {selectedImage && (
-                        <button 
-                          type="button" 
-                          onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
-                          className="text-xs text-red-500 hover:text-red-600 mt-2 flex items-center justify-center gap-1 w-full"
-                        >
-                          <X size={12} /> {t.removeImage}
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Text Description & Deep Dive Inputs */}
-                    <div className="flex-1 flex flex-col gap-3">
-                      <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder={t.descPlaceholder}
-                        className="w-full h-full min-h-[120px] p-4 text-base outline-none resize-none rounded-2xl bg-slate-50 dark:bg-black/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 border border-transparent focus:bg-white dark:focus:bg-black/40 focus:ring-2 focus:ring-purple-500/50 transition-all"
-                      />
+                  {/* Oracle Input Form */}
+                  <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden group mb-16">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                    
+                    <form onSubmit={handleGenerate} className="relative z-10 flex flex-col gap-6">
                       
-                      {/* Deep Dive Toggle */}
-                      <button 
-                        type="button"
-                        onClick={() => setShowDeepDive(!showDeepDive)}
-                        className="self-start text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1 transition-colors"
-                      >
-                        {showDeepDive ? t.hideCosmicDetails : t.addCosmicDetails}
-                      </button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Occasion */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">{t.occasionLabel}</label>
+                          <div className="relative">
+                            <select 
+                              value={occasionKey}
+                              onChange={(e) => setOccasionKey(e.target.value)}
+                              className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-700 dark:text-slate-200 font-medium focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
+                            >
+                              {occasionKeys.map(key => (
+                                <option key={key} value={key}>{(t.occasions as any)[key]}</option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                          </div>
+                        </div>
 
-                      {/* Deep Dive Inputs Panel */}
-                      {showDeepDive && (
-                        <div className="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-3 mt-1 bg-purple-50/50 dark:bg-purple-900/10 p-3 rounded-xl border border-purple-100 dark:border-purple-500/20">
-                           {/* Zodiac Selector */}
-                           <div className="space-y-1">
-                             <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                               <Star size={10} /> {t.zodiacLabel}
-                             </label>
-                             <div className="relative">
-                               <select 
-                                  value={zodiac}
-                                  onChange={(e) => setZodiac(e.target.value)}
-                                  className="w-full text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-purple-500 outline-none appearance-none"
-                               >
-                                 <option value="">{t.zodiacPlaceholder}</option>
-                                 {zodiacOptions.map(z => (
-                                   <option key={z} value={z}>{z}</option>
-                                 ))}
-                               </select>
-                               <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
-                             </div>
+                        {/* Budget */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1 flex justify-between">
+                            <span>{t.budgetLabel}</span>
+                            <span className="text-purple-600 dark:text-purple-400">{(t.budgets as any)[budgetKeys[budgetIndex]]}</span>
+                          </label>
+                          <div className="h-[46px] flex items-center px-2">
+                            <input 
+                              type="range" 
+                              min="0" 
+                              max="3" 
+                              step="1"
+                              value={budgetIndex}
+                              onChange={(e) => setBudgetIndex(parseInt(e.target.value))}
+                              className="w-full h-2 bg-slate-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-pink-500 transition-all"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Main Inputs */}
+                      <div className="flex flex-col md:flex-row gap-6">
+                        {/* Image Upload */}
+                        <div className="w-full md:w-1/3 shrink-0">
+                          <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handleImageUpload} 
+                            accept="image/*" 
+                            className="hidden" 
+                          />
+                          <div 
+                            onClick={() => fileInputRef.current?.click()}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`h-full min-h-[160px] rounded-2xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center p-4 relative overflow-hidden group/image
+                              ${selectedImage 
+                                ? 'border-purple-500/50 bg-slate-900/50' 
+                                : isDragging
+                                  ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-500/10 scale-[1.02]'
+                                  : 'border-slate-300 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-purple-500/5'
+                              }`}
+                          >
+                            {selectedImage ? (
+                              <>
+                                <img src={selectedImage} alt="Aura" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/image:opacity-40 transition-opacity" />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity">
+                                  <span className="text-white font-medium flex items-center gap-2"><RefreshCcw size={14}/> {t.changeImage}</span>
+                                </div>
+                                <div className="absolute top-2 right-2 bg-purple-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">{t.auraActive}</div>
+                              </>
+                            ) : (
+                              <>
+                                <div className={`bg-white dark:bg-white/10 p-3 rounded-full mb-3 shadow-sm transition-transform ${isDragging ? 'scale-125' : 'group-hover/image:scale-110'}`}>
+                                  <Camera size={24} className="text-purple-500 dark:text-purple-300" />
+                                </div>
+                                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{t.readAura}</p>
+                                <p className="text-xs text-slate-400 text-center mt-1">{t.uploadHint}</p>
+                              </>
+                            )}
+                          </div>
+                          {selectedImage && (
+                            <button 
+                              type="button" 
+                              onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
+                              className="text-xs text-red-500 hover:text-red-600 mt-2 flex items-center justify-center gap-1 w-full"
+                            >
+                              <X size={12} /> {t.removeImage}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Description & Deep Dive */}
+                        <div className="flex-1 flex flex-col gap-3">
+                          <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder={t.descPlaceholder}
+                            className="w-full h-full min-h-[120px] p-4 text-base outline-none resize-none rounded-2xl bg-slate-50 dark:bg-black/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 border border-transparent focus:bg-white dark:focus:bg-black/40 focus:ring-2 focus:ring-purple-500/50 transition-all"
+                          />
+                          
+                          <button 
+                            type="button"
+                            onClick={() => setShowDeepDive(!showDeepDive)}
+                            className="self-start text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1 transition-colors"
+                          >
+                            {showDeepDive ? t.hideCosmicDetails : t.addCosmicDetails}
+                          </button>
+
+                          {showDeepDive && (
+                            <div className="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-3 mt-1 bg-purple-50/50 dark:bg-purple-900/10 p-3 rounded-xl border border-purple-100 dark:border-purple-500/20">
+                               <div className="space-y-1">
+                                 <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                   <Star size={10} /> {t.zodiacLabel}
+                                 </label>
+                                 <div className="relative">
+                                   <select 
+                                      value={zodiac}
+                                      onChange={(e) => setZodiac(e.target.value)}
+                                      className="w-full text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-purple-500 outline-none appearance-none"
+                                   >
+                                     <option value="">{t.zodiacPlaceholder}</option>
+                                     {zodiacOptions.map(z => (
+                                       <option key={z} value={z}>{z}</option>
+                                     ))}
+                                   </select>
+                                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                                 </div>
+                               </div>
+
+                               <div className="space-y-1">
+                                 <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                   <Music size={10} /> {t.musicLabel}
+                                 </label>
+                                 <input 
+                                   type="text"
+                                   value={music}
+                                   onChange={(e) => setMusic(e.target.value)}
+                                   placeholder={t.musicPlaceholder}
+                                   className="w-full text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-purple-500 outline-none"
+                                 />
+                               </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-white/5">
+                        <div className="flex items-center gap-4 w-full">
+                          <p className="hidden md:block text-xs text-slate-400 italic flex-1">
+                            {t.disclaimer}
+                          </p>
+                          <button
+                            type="submit"
+                            disabled={(!description.trim() && !selectedImage) || loadingState === LoadingState.LOADING}
+                            className="w-full md:w-auto relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-800 dark:disabled:to-slate-800 disabled:opacity-70 disabled:cursor-not-allowed text-white px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-purple-500/25"
+                          >
+                            {loadingState === LoadingState.LOADING ? (
+                              <>
+                                <Loader2 size={18} className="animate-spin" />
+                                <span className="animate-pulse">
+                                  {selectedImage ? t.btnLoadingReading : t.btnLoadingConsulting}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles size={18} className="text-yellow-200 fill-yellow-200" />
+                                {t.btnGenerate}
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                    </form>
+                  </div>
+                  
+                  {/* Oracle Error */}
+                  {loadingState === LoadingState.ERROR && (
+                    <div className="bg-red-500/10 text-red-600 dark:text-red-200 p-4 rounded-xl border border-red-500/20 mb-10 flex items-center gap-3 justify-center backdrop-blur-md animate-fade-in text-sm">
+                      <span className="font-bold">Error:</span> {errorMsg}
+                    </div>
+                  )}
+
+                  {/* Oracle Results */}
+                  {recommendations.length > 0 && (
+                    <div className="animate-fade-in">
+                      <div className="flex items-center justify-between mb-8 px-2">
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                          <div className="bg-yellow-500/20 p-1.5 rounded-lg">
+                            <Sparkles size={16} className="text-yellow-600 dark:text-yellow-400 fill-yellow-400" />
+                          </div>
+                          {t.resultsTitle}
+                        </h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-10">
+                        {recommendations.map((gift, index) => (
+                          <GiftCard 
+                            key={index} 
+                            gift={gift} 
+                            index={index} 
+                            language={language}
+                            recipientDescription={description}
+                            occasion={(t.occasions as any)[occasionKey]}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+               </div>
+            ) : (
+               // --- ALCHEMY LAB MODE ---
+               <div className="animate-fade-in">
+                  <div className="text-center mb-10 max-w-3xl mx-auto pt-4 md:pt-12">
+                     <div className="flex justify-center mb-4">
+                        <div className="p-3 bg-amber-500/10 rounded-full">
+                           <FlaskConical size={32} className="text-amber-500" />
+                        </div>
+                     </div>
+                     <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight leading-tight text-slate-800 dark:text-slate-100">
+                        {t.alchemyTitle} <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{t.alchemyHighlight}</span>
+                     </h2>
+                     <p className="text-slate-600 dark:text-slate-400 text-lg mb-8 leading-relaxed font-light">
+                        {t.alchemyDesc}
+                     </p>
+                  </div>
+
+                  <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-amber-200 dark:border-amber-500/20 rounded-3xl p-8 shadow-[0_0_40px_rgba(245,158,11,0.1)] relative overflow-hidden mb-16">
+                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -z-10" />
+                     
+                     <form onSubmit={handleAlchemyFuse} className="flex flex-col items-center gap-8">
+                        
+                        <div className="flex flex-col md:flex-row gap-6 w-full items-stretch">
+                           {/* Element A */}
+                           <div className="flex-1 relative group">
+                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1">{t.elementALabel}</label>
+                              <div className="relative h-20 w-full">
+                                 <input 
+                                    type="text" 
+                                    value={elementA}
+                                    onChange={(e) => setElementA(e.target.value)}
+                                    placeholder={t.elementAPlaceholder}
+                                    className="w-full h-full text-lg font-medium text-center bg-slate-50 dark:bg-black/20 border-2 border-slate-200 dark:border-white/10 rounded-2xl focus:border-purple-500 focus:ring-0 outline-none transition-all placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                 />
+                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-200 dark:text-purple-900 pointer-events-none">
+                                    <LayoutGrid size={24} />
+                                 </div>
+                              </div>
                            </div>
 
-                           {/* Music Vibe Input */}
-                           <div className="space-y-1">
-                             <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                               <Music size={10} /> {t.musicLabel}
-                             </label>
-                             <input 
-                               type="text"
-                               value={music}
-                               onChange={(e) => setMusic(e.target.value)}
-                               placeholder={t.musicPlaceholder}
-                               className="w-full text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-purple-500 outline-none"
-                             />
+                           {/* Fusion Icon */}
+                           <div className="flex items-end pb-6 justify-center">
+                              <div className="p-2 bg-slate-100 dark:bg-white/5 rounded-full text-slate-400">
+                                 <Zap size={24} />
+                              </div>
+                           </div>
+
+                           {/* Element B */}
+                           <div className="flex-1 relative group">
+                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1">{t.elementBLabel}</label>
+                              <div className="relative h-20 w-full">
+                                 <input 
+                                    type="text" 
+                                    value={elementB}
+                                    onChange={(e) => setElementB(e.target.value)}
+                                    placeholder={t.elementBPlaceholder}
+                                    className="w-full h-full text-lg font-medium text-center bg-slate-50 dark:bg-black/20 border-2 border-slate-200 dark:border-white/10 rounded-2xl focus:border-amber-500 focus:ring-0 outline-none transition-all placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                 />
+                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-200 dark:text-amber-900 pointer-events-none">
+                                    <Sparkles size={24} />
+                                 </div>
+                              </div>
                            </div>
                         </div>
-                      )}
+
+                        <button 
+                           type="submit"
+                           disabled={alchemyLoading === LoadingState.LOADING || !elementA || !elementB}
+                           className="px-12 py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-lg rounded-full shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                           {alchemyLoading === LoadingState.LOADING ? (
+                              <>
+                                 <Loader2 size={20} className="animate-spin" />
+                                 {t.btnLoadingFusing}
+                              </>
+                           ) : (
+                              <>
+                                 <FlaskConical size={20} className="fill-white/20" />
+                                 {t.fuseButton}
+                              </>
+                           )}
+                        </button>
+
+                     </form>
+                  </div>
+
+                  {/* Alchemy Error */}
+                  {alchemyLoading === LoadingState.ERROR && (
+                    <div className="bg-red-500/10 text-red-600 dark:text-red-200 p-4 rounded-xl border border-red-500/20 mb-10 flex items-center gap-3 justify-center backdrop-blur-md animate-fade-in text-sm">
+                      <span className="font-bold">Error:</span> {errorMsg}
                     </div>
-                  </div>
+                  )}
 
-                  {/* Action Button */}
-                  <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-white/5">
-                    <div className="flex items-center gap-4 w-full">
-                      <p className="hidden md:block text-xs text-slate-400 italic flex-1">
-                        {t.disclaimer}
-                      </p>
-                      <button
-                        type="submit"
-                        disabled={(!description.trim() && !selectedImage) || loadingState === LoadingState.LOADING}
-                        className="w-full md:w-auto relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-800 dark:disabled:to-slate-800 disabled:opacity-70 disabled:cursor-not-allowed text-white px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-purple-500/25"
-                      >
-                        {loadingState === LoadingState.LOADING ? (
-                          <>
-                            <Loader2 size={18} className="animate-spin" />
-                            <span className="animate-pulse">
-                              {selectedImage ? t.btnLoadingReading : t.btnLoadingConsulting}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles size={18} className="text-yellow-200 fill-yellow-200" />
-                            {t.btnGenerate}
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                  {/* Alchemy Results */}
+                  {alchemyResults.length > 0 && (
+                     <div className="animate-fade-in">
+                        <div className="flex items-center justify-between mb-8 px-2">
+                           <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                              <div className="bg-amber-500/20 p-1.5 rounded-lg">
+                                 <FlaskConical size={16} className="text-amber-600 dark:text-amber-400" />
+                              </div>
+                              {t.alchemyResults}
+                           </h3>
+                        </div>
 
-                </form>
-              </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-10">
+                           {alchemyResults.map((gift, index) => (
+                              <div key={index} className="relative group">
+                                 {/* Gold Border Effect Wrapper */}
+                                 <div className="absolute -inset-[2px] bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 rounded-2xl opacity-70 blur-sm group-hover:opacity-100 transition-opacity duration-500"></div>
+                                 <div className="relative h-full bg-white dark:bg-slate-900 rounded-xl overflow-hidden">
+                                    <GiftCard 
+                                       gift={gift} 
+                                       index={index} 
+                                       language={language}
+                                       recipientDescription={`Fusion of ${elementA} and ${elementB}`}
+                                       occasion="Alchemy Experiment"
+                                    />
+                                 </div>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                  )}
+               </div>
+            )}
 
-              {/* Error Message */}
-              {loadingState === LoadingState.ERROR && (
-                <div className="bg-red-500/10 text-red-600 dark:text-red-200 p-4 rounded-xl border border-red-500/20 mb-10 flex items-center gap-3 justify-center backdrop-blur-md animate-fade-in text-sm">
-                  <span className="font-bold">Error:</span> {errorMsg}
-                </div>
-              )}
-
-              {/* Results Grid */}
-              {recommendations.length > 0 && (
-                <div className="animate-fade-in">
-                  <div className="flex items-center justify-between mb-8 px-2">
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                      <div className="bg-yellow-500/20 p-1.5 rounded-lg">
-                        <Sparkles size={16} className="text-yellow-600 dark:text-yellow-400 fill-yellow-400" />
-                      </div>
-                      {t.resultsTitle}
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-10">
-                    {recommendations.map((gift, index) => (
-                      <GiftCard 
-                        key={index} 
-                        gift={gift} 
-                        index={index} 
-                        language={language}
-                        recipientDescription={description}
-                        occasion={(t.occasions as any)[occasionKey]}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* History Sidebar */}
+            {/* History Sidebar (Shared) */}
             <div 
               className={`fixed top-0 right-0 h-full w-full sm:w-[400px] z-[60] transform transition-transform duration-300 ease-in-out ${
                 showHistory ? 'translate-x-0' : 'translate-x-full'
@@ -588,8 +801,18 @@ const App: React.FC = () => {
                       item={item} 
                       language={language}
                       onClick={(item) => {
-                        setDescription(item.description);
-                        setRecommendations(item.recommendations);
+                        // Restore state based on simple heuristic (description starting with emoji is likely alchemy)
+                        if (item.description.startsWith('⚗️')) {
+                            // It's alchemy history, just show results. 
+                            // Restoring inputs is harder without storing structured metadata, 
+                            // so we just switch tab and show results.
+                            setActiveTab('alchemy');
+                            setAlchemyResults(item.recommendations);
+                        } else {
+                            setActiveTab('oracle');
+                            setDescription(item.description);
+                            setRecommendations(item.recommendations);
+                        }
                         setShowHistory(false);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }} 
@@ -607,6 +830,25 @@ const App: React.FC = () => {
             
             {showHistory && <div className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm" onClick={() => setShowHistory(false)} />}
           </main>
+
+          {/* MOBILE BOTTOM NAV */}
+          <div className="md:hidden fixed bottom-0 left-0 w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-t border-slate-200 dark:border-white/5 z-40 px-6 py-3 flex justify-between items-center">
+             <button onClick={() => setActiveTab('oracle')} className={`flex flex-col items-center gap-1 ${activeTab === 'oracle' ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'}`}>
+                <Sparkles size={24} />
+                <span className="text-[10px] font-bold">{t.menuOracle}</span>
+             </button>
+             
+             <div className="relative -top-6">
+                <button onClick={handleBackToHome} className="bg-gradient-to-tr from-purple-500 to-pink-500 p-4 rounded-full text-white shadow-lg shadow-purple-500/30">
+                   <Home size={24} />
+                </button>
+             </div>
+
+             <button onClick={() => setActiveTab('alchemy')} className={`flex flex-col items-center gap-1 ${activeTab === 'alchemy' ? 'text-amber-500' : 'text-slate-400'}`}>
+                <FlaskConical size={24} />
+                <span className="text-[10px] font-bold">{t.menuAlchemy}</span>
+             </button>
+          </div>
         </div>
       )}
 
@@ -632,20 +874,6 @@ const App: React.FC = () => {
           cursor: pointer;
           background: transparent;
           border-radius: 4px;
-        }
-
-        /* 3D Flip Card Styles */
-        .perspective-1000 {
-          perspective: 1000px;
-        }
-        .transform-style-3d {
-          transform-style: preserve-3d;
-        }
-        .backface-hidden {
-          backface-visibility: hidden;
-        }
-        .rotate-y-180 {
-          transform: rotateY(180deg);
         }
       `}</style>
     </div>

@@ -4,9 +4,13 @@ export const translations = {
   id: {
     title: "Gift Genius",
     
+    // Navigation
+    menuOracle: "Orakel",
+    menuAlchemy: "Laboratorium",
+
     // Landing Page
     landingHeroSubtitle: "Sentuh satu aura untuk memulai keajaiban.",
-    tarot1Title: "Sang Bintang", // Deprecated but kept for safety if referenced elsewhere temporarily
+    tarot1Title: "Sang Bintang", 
     tarot1Desc: "Peta rasi bintang kustom dari malam kita bertemu.",
     tarot2Title: "Sang Alkemis",
     tarot2Desc: "Paket DIY Gastronomi Molekuler.",
@@ -16,11 +20,22 @@ export const translations = {
     cardReveal: "KLIK UNTUK MEMBUKA",
     enterOracle: "Masuki Orakel",
 
-    // Main App
+    // Main App (Oracle)
     heroTitle: "Buka ",
     heroTitleHighlight: "Keajaiban.",
     heroDesc: "Unggah foto untuk membaca aura, atur mantra anggaran, dan biarkan AI menemukan kado yang sempurna.",
     
+    // Alchemy Lab
+    alchemyTitle: "Laboratorium",
+    alchemyHighlight: "Alkimia.",
+    alchemyDesc: "Gabungkan dua elemen berbeda untuk menciptakan kado hybrid yang unik dan tidak terduga.",
+    elementALabel: "Elemen A (Dasar)",
+    elementBLabel: "Elemen B (Pemicu)",
+    elementAPlaceholder: "Cth: Golf, Memasak, Kucing",
+    elementBPlaceholder: "Cth: Star Wars, Teknologi, Retro",
+    fuseButton: "Satukan Elemen",
+    alchemyResults: "Hasil Fusi Emas",
+
     // Inputs
     occasionLabel: "Acara Spesial",
     budgetLabel: "Mantra Anggaran",
@@ -43,6 +58,7 @@ export const translations = {
     // Buttons
     btnLoadingReading: "Sedang Membaca Aura...",
     btnLoadingConsulting: "Konsultasi dengan Roh...",
+    btnLoadingFusing: "Menyatukan Elemen...",
     btnGenerate: "Ungkap Kado",
     btnSearchGoogle: "Google",
     btnSearchShop: "Shopee",
@@ -81,6 +97,10 @@ export const translations = {
   en: {
     title: "Gift Genius",
 
+    // Navigation
+    menuOracle: "Oracle",
+    menuAlchemy: "Alchemy Lab",
+
     // Landing Page
     landingHeroSubtitle: "Tap a vibe to start the magic.",
     tarot1Title: "The Star",
@@ -93,11 +113,22 @@ export const translations = {
     cardReveal: "CLICK TO REVEAL",
     enterOracle: "Enter the Oracle",
 
-    // Main App
+    // Main App (Oracle)
     heroTitle: "Unlock ",
     heroTitleHighlight: "Magic.",
     heroDesc: "Upload a photo to read the aura, set your budget spell, and let AI find the perfect gift.",
     
+    // Alchemy Lab
+    alchemyTitle: "Alchemy ",
+    alchemyHighlight: "Lab.",
+    alchemyDesc: "Fuse two distinct elements to create unique, hybrid gift ideas found in the real world.",
+    elementALabel: "Element A (Base)",
+    elementBLabel: "Element B (Catalyst)",
+    elementAPlaceholder: "e.g., Golf, Cooking, Cats",
+    elementBPlaceholder: "e.g., Star Wars, Tech, Retro",
+    fuseButton: "Fuse Elements",
+    alchemyResults: "Golden Fusion Results",
+
     // Inputs
     occasionLabel: "Special Occasion",
     budgetLabel: "Budget Spell",
@@ -120,6 +151,7 @@ export const translations = {
     // Buttons
     btnLoadingReading: "Reading Aura...",
     btnLoadingConsulting: "Consulting Spirits...",
+    btnLoadingFusing: "Fusing Elements...",
     btnGenerate: "Reveal Gifts",
     btnSearchGoogle: "Google",
     btnSearchShop: "Amazon",
